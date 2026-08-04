@@ -1,0 +1,9 @@
+fastapi>=0.115
+uvicorn>=0.30
+sqlalchemy>=2.0
+pydantic-settings>=2.0
+cryptography>=42
+httpx>=0.27
+python-multipart>=0.0.9
+mcp>=1.9,<2  # 2.0 改了 FastMCP 的导入路径,先锁 1.x
+pytest>=8

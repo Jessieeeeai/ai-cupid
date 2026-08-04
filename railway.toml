@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"
+
+# 记得在 Railway 里给服务挂一个 Volume,Mount Path 填 /app/data
+# (数据库和照片都存在这里,不挂卷的话重新部署数据会丢)

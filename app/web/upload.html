@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>上传照片</title>
+<style>
+  body { background:#0f1115; color:#e8e8ea; font-family:-apple-system,"PingFang SC",sans-serif;
+         display:grid; place-items:center; height:100dvh; margin:0; }
+  .card { background:#1a1d24; padding:28px; border-radius:16px; width:min(420px, 92vw); text-align:center; }
+  input[type=file] { margin:18px 0; width:100%; }
+  button { background:#ff5d8f; color:#fff; border:0; border-radius:12px; padding:12px 28px;
+           font-size:16px; cursor:pointer; }
+  #msg { margin-top:14px; color:#8a8f98; min-height:22px; }
+  .previews { display:flex; gap:8px; justify-content:center; margin-top:10px; }
+  .previews img { width:90px; height:90px; object-fit:cover; border-radius:10px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>上传照片 📷</h2>
+  <p>最多 3 张,至少 1 张露脸<br><small>JPG/PNG/WebP,单张 ≤ 8MB</small></p>
+  <input type="file" id="files" accept="image/jpeg,image/png,image/webp" multiple>
+  <div class="previews" id="prev"></div>
+  <button id="go">上传</button>
+  <div id="msg"></div>
+</div>
+<script>
+const filesInp = document.getElementById('files');
+const prev = document.getElementById('prev');
+const msg = document.getElementById('msg');
+filesInp.onchange = () => {
+  prev.innerHTML = '';
+  [...filesInp.files].slice(0,3).forEach(f => {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    prev.appendChild(img);
+  });
+};
+document.getElementById('go').onclick = async () => {
+  const fs = [...filesInp.files].slice(0,3);
+  if (!fs.length) { msg.textContent = '先选照片~'; return; }
+  const fd = new FormData();
+  fs.forEach(f => fd.append('files', f));
+  msg.textContent = '上传中…';
+  const r = await fetch('/api/upload/{{TOKEN}}', {method:'POST', body: fd});
+  const j = await r.json();
+  msg.textContent = r.ok ? `✅ 成功上传 ${j.saved} 张!回到对话继续吧,这个页面可以关了。` : ('⚠️ ' + (j.detail||'失败了'));
+};
+</script>
+</body>
+</html>
