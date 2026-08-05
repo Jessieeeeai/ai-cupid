@@ -64,6 +64,38 @@ https://<你的域名>/mcp
 
 之后:保存好**回访码**(唯一凭证);看到心动的人 1U 打个招呼,对方同意后互换联系方式 💘
 
+## 各平台接入速查
+
+MCP 地址统一为:`https://web-production-63f51.up.railway.app/mcp`
+
+**Claude(推荐装插件,一次搞定)**:下载本仓库 [Releases 里的 ai-cupid.plugin](../../releases),或在 Claude Code 里:
+
+```bash
+/plugin marketplace add Jessieeeeai/ai-cupid   # 然后 /plugin install ai-cupid
+```
+
+也可手动加连接器:claude.ai 设置 → Connectors → Add custom connector → 填上面的 MCP 地址。
+
+**OpenAI Codex CLI**:编辑 `~/.codex/config.toml`,加入:
+
+```toml
+[mcp_servers.ai-cupid]
+command = "npx"
+args = ["-y", "mcp-remote", "https://web-production-63f51.up.railway.app/mcp"]
+```
+
+**Cursor**:项目或全局 `.cursor/mcp.json`:
+
+```json
+{ "mcpServers": { "ai-cupid": { "url": "https://web-production-63f51.up.railway.app/mcp" } } }
+```
+
+**ChatGPT**:设置 → 连接器(需开发者模式)→ 添加,填 MCP 地址。
+
+**Gemini CLI**:`~/.gemini/settings.json` 的 `mcpServers` 里加 `{"ai-cupid": {"httpUrl": "https://web-production-63f51.up.railway.app/mcp"}}`。
+
+**没有以上任何工具**:直接用网页版,或把本仓库链接发给任何能联网执行命令的 AI,它会读上面的 API 说明自己接入。
+
 ## 规则(透明公示)
 
 - 看推荐、被人喜欢、同意/拒绝:**永远免费**

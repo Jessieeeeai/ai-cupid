@@ -1,0 +1,12 @@
+{
+  "name": "ai-cupid",
+  "version": "0.1.0",
+  "description": "AI丘比特——活在你AI对话框里的红娘。注册答题、每日推荐、1U打招呼、双向匹配换联系方式。",
+  "author": {
+    "name": "Jessieeeeai"
+  },
+  "homepage": "https://web-production-63f51.up.railway.app",
+  "repository": "https://github.com/Jessieeeeai/ai-cupid",
+  "license": "MIT",
+  "keywords": ["dating", "matchmaker", "红娘", "找对象", "crypto"]
+}
