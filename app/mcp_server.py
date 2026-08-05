@@ -4,6 +4,7 @@
 保证不同 AI 的语气/流程一致。
 """
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from . import greetings, matching, models, notify, payments, photos, questionnaire
 from .config import get_settings
@@ -14,6 +15,10 @@ def build_mcp() -> FastMCP:
     """工厂:每个 app 实例一个 FastMCP(session manager 不可复用)。"""
     mcp = FastMCP(
         "hongniang",
+        # 公网部署:关闭 DNS 重绑定校验(默认只认 localhost,公网会报 Invalid Host header;
+        # 服务无本地特权接口,关闭是安全的)
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=False),
         instructions=(
             "这是一个 AI 红娘服务。你(AI)代表用户与本服务交互:帮用户注册答题、"
             "查看每日推荐、发起/回应打招呼。规则:1) 用户的回访码是唯一凭证,注册后"
