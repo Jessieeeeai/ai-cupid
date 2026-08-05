@@ -267,11 +267,13 @@ def balance(body: CodeBody, db: Session = Depends(get_db)):
 # ---------- Webhooks ----------
 
 @router.post("/webhooks/chain/{chain}")
-async def chain_webhook(chain: str, request: Request,
+async def chain_webhook(chain: str, request: Request, key: str = "",
                         x_webhook_secret: str = Header(default=""),
                         db: Session = Depends(get_db)):
+    """密钥可放 URL 查询参数 ?key=...(Helius/Alchemy 都不支持自定义header,URL最通用)"""
     s = get_settings()
-    if s.chain_webhook_secret and x_webhook_secret != s.chain_webhook_secret:
+    if s.chain_webhook_secret and key != s.chain_webhook_secret \
+            and x_webhook_secret != s.chain_webhook_secret:
         raise HTTPException(403)
     payload = await request.json()
     confirmed = []
