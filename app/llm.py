@@ -93,12 +93,57 @@ def recommend_reason(a_profile: str, b_profile: str, b_nick: str,
     return f"{b_nick} 的整体画像和你的期待重合度较高,资料细节里能看到不少共鸣点。"
 
 
+SMART_PICK_PROMPT = """你是一位眼光毒辣又真诚的金牌红娘。下面是求偶者 A 的完整资料,以及若干候选人。
+请通读所有资料,替 A 挑出最合适的 {k} 个人(按合适程度排序),并为每个人写 2-3 句推荐理由。
+
+要求:
+- 理由必须引用双方资料里的【具体细节】(爱好、职业、身高学历、圈内信仰、说过的话),严禁空话套话
+- 语气自然温暖,像懂行的朋友介绍,不要用"你们都"开头,不要出现"候选人/匹配度"这类系统词
+- 只输出 JSON 数组,格式:[{{"id": 数字, "reason": "..."}}],不要任何其他文字
+
+A 的资料:
+{a}
+
+候选人列表:
+{cands}"""
+
+
+def smart_pick(a_profile: str, candidates: list[dict], k: int) -> list[dict] | None:
+    """让 Claude 通读资料精排并写理由。candidates: [{id, nickname, text}]。
+    返回 [{id, reason}](按推荐顺序);失败返回 None(调用方走降级)。"""
+    s = get_settings()
+    if not s.anthropic_api_key or not candidates:
+        return None
+    cands_text = "\n\n".join(
+        f"[id={c['id']}] 昵称:{c['nickname']}\n{c['text'][:1200]}" for c in candidates)
+    try:
+        r = httpx.post("https://api.anthropic.com/v1/messages",
+                       headers={"x-api-key": s.anthropic_api_key,
+                                "anthropic-version": "2023-06-01"},
+                       json={"model": s.anthropic_model, "max_tokens": 1500,
+                             "messages": [{"role": "user", "content": SMART_PICK_PROMPT.format(
+                                 k=k, a=a_profile[:2500], cands=cands_text)}]},
+                       timeout=60)
+        r.raise_for_status()
+        text = r.json()["content"][0]["text"].strip()
+        # 容错:剥掉可能的 ```json 包裹
+        text = re.sub(r"^```(json)?|```$", "", text.strip(), flags=re.M).strip()
+        import json as _json
+        picks = _json.loads(text)
+        valid_ids = {c["id"] for c in candidates}
+        out = [{"id": int(p["id"]), "reason": str(p["reason"])[:600]}
+               for p in picks if int(p.get("id", -1)) in valid_ids and p.get("reason")]
+        return out[:k] or None
+    except Exception:
+        return None
+
+
 def _anthropic_reason(a_profile: str, b_profile: str, b_nick: str) -> str:
     s = get_settings()
     r = httpx.post("https://api.anthropic.com/v1/messages",
                    headers={"x-api-key": s.anthropic_api_key,
                             "anthropic-version": "2023-06-01"},
-                   json={"model": "claude-haiku-4-5", "max_tokens": 300,
+                   json={"model": s.anthropic_model, "max_tokens": 300,
                          "messages": [{"role": "user", "content": REASON_PROMPT.format(
                              a=a_profile[:2000], b=b_profile[:2000], b_nick=b_nick)}]},
                    timeout=30)

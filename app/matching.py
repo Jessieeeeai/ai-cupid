@@ -101,18 +101,41 @@ def get_daily_recommendations(db: Session, user: models.User,
              and _exposure_today(db, c.id) < s.daily_exposure_cap]
 
     ranked = sorted(cands, key=lambda c: score(user, c, False), reverse=True)
-    picked = ranked[:s.daily_reco_count]
 
+    # AI 精排:粗排前8名交给 Claude 通读资料,挑3个并写走心理由;失败走降级
     new_rows = []
-    for c in picked:
-        sc = score(user, c, False)
-        reason = _make_reason(user, c)
-        row = models.Recommendation(user_id=user.id, target_id=c.id, date=today,
-                                    reason=reason, score=sc)
-        db.add(row)
-        new_rows.append(row)
+    shortlist = ranked[:max(s.daily_reco_count * 2 + 2, 8)]
+    picks = _smart_pick(user, shortlist, s.daily_reco_count) if shortlist else None
+    if picks:
+        by_id = {c.id: c for c in shortlist}
+        for p in picks:
+            c = by_id[p["id"]]
+            row = models.Recommendation(user_id=user.id, target_id=c.id, date=today,
+                                        reason=p["reason"], score=score(user, c, False))
+            db.add(row)
+            new_rows.append(row)
+    else:
+        for c in ranked[:s.daily_reco_count]:
+            row = models.Recommendation(user_id=user.id, target_id=c.id, date=today,
+                                        reason=_make_reason(user, c),
+                                        score=score(user, c, False))
+            db.add(row)
+            new_rows.append(row)
     db.commit()
     return [_present(db, r) for r in existing + new_rows]
+
+
+def _smart_pick(user: models.User, shortlist: list[models.User], k: int):
+    a_text = llm.profile_text(
+        (user.profile.answers or {}) if user.profile else {}, user.city, user.goal)
+    a_text = f"年龄:{user.age()}\n" + a_text
+    cands = []
+    for c in shortlist:
+        t = llm.profile_text(
+            (c.profile.answers or {}) if c.profile else {}, c.city, c.goal)
+        cands.append({"id": c.id, "nickname": c.nickname or "TA",
+                      "text": f"年龄:{c.age()}\n{t}"})
+    return llm.smart_pick(a_text, cands, k)
 
 
 def _make_reason(user: models.User, cand: models.User) -> str:

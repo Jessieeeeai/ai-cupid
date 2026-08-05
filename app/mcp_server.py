@@ -22,7 +22,8 @@ def build_mcp() -> FastMCP:
         instructions=(
             "这是一个 AI 红娘服务。你(AI)代表用户与本服务交互:帮用户注册答题、"
             "查看每日推荐、发起/回应打招呼。规则:1) 用户的回访码是唯一凭证,注册后"
-            "务必提醒用户保存;2) 逐题引导,自然对话,不要一次抛多题;3) 题目带 options "
+            "务必提醒用户保存;2) 逐题引导,自然对话,不要一次抛多题;对用户的每个回答"
+            "先给一句简短走心的回应(共情/接个梗)再问下一题,你是红娘不是表单;3) 题目带 options "
             "时,把选项用 1. 2. 3. 编号列出,并告诉用户【直接回数字就行】——把答案原样"
             "或数字提交给 answer_question 即可,服务器认数字;4) 涉及付款时,把金额、"
             "地址、'金额必须一分不差'讲清楚;5) 转述拒绝消息时语气委婉。"),
@@ -107,8 +108,16 @@ def _register_tools(mcp: FastMCP) -> None:
                 return {"pool_open": False, "unread_events": events,
                         "instruction": "告诉用户红娘还在攒匹配池,开放后会通知。有未读事件先转述。"}
             recos = matching.get_daily_recommendations(db, u)
+            my = (u.profile.answers or {}) if u.profile else {}
             return {"pool_open": True, "recommendations": recos, "unread_events": events,
-                    "instruction": ("逐个展示:昵称/年龄/城市/照片链接/推荐理由。"
+                    "my_profile": {"age": u.age(), "city": u.city, "goal": u.goal,
+                                   "answers": my},
+                    "instruction": ("你是用户的专属红娘。recommendations 里的 reason 只是"
+                                    "系统草稿——请你对比 my_profile(用户自己的资料)和每位"
+                                    "对象的资料,亲自为每个人重写 2-3 句走心的推荐理由:引用"
+                                    "双方的具体细节(爱好/职业/身高学历/圈内信仰/想说的话),"
+                                    "说清楚为什么可能来电,像懂行的朋友介绍,不要空话。"
+                                    "逐个展示:昵称/年龄/城市/身高学历/照片链接/你写的理由。"
                                     "告诉用户想认识谁就说,1U 可以打招呼。"
                                     "未读事件(有人打招呼/被同意等)优先转述。")}
         finally:

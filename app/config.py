@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     # LLM / Embedding(不填则用离线降级实现,功能可跑但匹配质量低)
     anthropic_api_key: str = ""
+    anthropic_model: str = "claude-haiku-4-5"   # 精排+推荐理由用的模型
     openai_api_key: str = ""
 
     # 业务参数
