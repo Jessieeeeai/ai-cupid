@@ -19,6 +19,9 @@
                    → 返回下一题(含 options 可选项);error 非空则让用户重答
 3. 照片上传链接    POST $BASE/api/upload_link           {"visit_code"}
                    → 把返回的 upload_url 给用户点开传照片(15分钟有效)
+   ★ 如果用户直接把照片发到了对话里且你能访问该文件:不用给链接,
+     取 upload_url 末尾的 token,替用户直接传(最多3张):
+     curl -F "files=@/路径/photo.jpg" $BASE/api/upload/<token>
 4. 今日推荐        POST $BASE/api/recommendations       {"visit_code"}
 5. 付费打招呼      POST $BASE/api/greeting              {"visit_code","target_id","message","chain":"solana|base"}
                    → 返回付款金额(唯一尾数,必须一分不差)和收款地址
@@ -49,7 +52,7 @@ https://<你的域名>/mcp
 请这样帮我:
 1. 如果你所在的平台支持添加 MCP 连接器(比如 Claude 的 设置→Connectors→Add custom
    connector),请一步一步教我把上面这个地址加进去。
-2. 添加成功后,调用 register_start 帮我注册,然后一题一题地问我 20 个问题。
+2. 添加成功后,调用 register_start 帮我注册,然后一题一题地问我 16 个问题。
 3. 提醒我保存好回访码(唯一凭证),并引导我上传 3 张照片。
 4. 以后我每天问你"今天有推荐吗",你就调用 get_recommendations 给我看今日推荐。
 5. 如果你没法添加 MCP 连接器,就告诉我打开 https://<你的域名> 在网页完成,一样能用。
@@ -137,7 +140,7 @@ Helius/Alchemy ──webhook──>     ├─> 扫链对账(唯一尾数金额)
 app/
   config.py         全部配置(品牌/价格/风控参数)
   models.py         数据模型(用户/问卷/推荐/打招呼/订单/流水/事件)
-  questionnaire.py  20题问卷状态机
+  questionnaire.py  16题问卷状态机
   matching.py       匹配引擎(硬过滤+软打分)
   llm.py            LLM/embedding 适配层(带离线降级)
   payments.py       订单/唯一尾数/余额ledger

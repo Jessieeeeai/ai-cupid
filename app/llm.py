@@ -107,7 +107,9 @@ def _anthropic_reason(a_profile: str, b_profile: str, b_nick: str) -> str:
 
 
 def profile_text(answers: dict, city: str | None, goal: str | None) -> str:
-    keys = ["q9", "q10", "q11", "q12", "q13", "q14", "q15", "q16", "q17", "q18"]
+    labels = {"body": "身高体重", "edu": "学历", "q9": "自我介绍",
+              "q11": "爱好", "q15": "圈内", "q18": "想说的话"}
     parts = [f"城市:{city}", f"目标:{goal}"]
-    parts += [f"{k}:{answers.get(k, '')}" for k in keys if answers.get(k)]
+    parts += [f"{labels.get(k, k)}:{answers.get(k, '')}"
+              for k in labels if answers.get(k)]
     return "\n".join(parts)

@@ -79,7 +79,7 @@ ${location.origin}/mcp
 
 请这样帮我:
 1. 如果你所在的平台支持添加 MCP 连接器(比如 Claude 的 设置→Connectors→Add custom connector,或 ChatGPT 的连接器设置),请一步一步教我把上面这个地址加进去。
-2. 添加成功后,调用 register_start 工具帮我注册,然后一题一题地问我 20 个问题,自然聊天的方式,不要一次抛几题。
+2. 添加成功后,调用 register_start 工具帮我注册,然后一题一题地问我 16 个问题,自然聊天的方式,不要一次抛几题。
 3. 提醒我保存好回访码(那是唯一凭证),并引导我上传 3 张照片。
 4. 以后我每天来问你"今天有推荐吗",你就调用 get_recommendations 给我看今日推荐。
 5. 如果你没法添加 MCP 连接器,就直接告诉我打开 ${location.origin} 在网页里完成,一样能用。`;
@@ -136,7 +136,7 @@ function showQuestion(q) {
 }
 
 async function boot() {
-  add('ai', '你好呀,我是你的 AI 红娘 💕\n回答 20 个小问题 + 3 张照片,我每天给你推 3 位可能来电的人。');
+  add('ai', '你好呀,我是你的 AI 红娘 💕\n回答 16 个小问题 + 3 张照片,我每天给你推 3 位可能来电的人。');
   showOptions([{label: '🚀 开始注册', value: '开始'},
                {label: '我有回访码(LOVE-开头,直接输入)', value: null}]);
 }

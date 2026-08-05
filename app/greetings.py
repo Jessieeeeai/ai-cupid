@@ -160,12 +160,13 @@ def inbox(db: Session, user: models.User) -> list[dict]:
     for g in rows:
         from_user = db.get(models.User, g.from_user_id)
         from .photos import signed_photo_urls
+        fa = (from_user.profile.answers or {}) if from_user.profile else {}
         out.append({
             "greeting_id": g.id,
             "from": {"nickname": from_user.nickname, "age": from_user.age(),
                      "city": from_user.city, "goal": from_user.goal,
-                     "intro": (from_user.profile.answers or {}).get("q9", "")
-                     if from_user.profile else "",
+                     "body": fa.get("body", ""), "edu": fa.get("edu", ""),
+                     "intro": fa.get("q9", ""),
                      "photos": signed_photo_urls(from_user)},
             "message": g.message,
             "hours_left": max(0, int(get_settings().greeting_expire_hours -

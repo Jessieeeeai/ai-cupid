@@ -129,14 +129,17 @@ def _make_reason(user: models.User, cand: models.User) -> str:
 def _present(db: Session, r: models.Recommendation) -> dict:
     from .photos import signed_photo_urls
     t = db.get(models.User, r.target_id)
+    a = (t.profile.answers or {}) if t.profile else {}
     return {
         "target_id": t.id,
         "nickname": t.nickname,
         "age": t.age(),
         "city": t.city,
         "goal": t.goal,
-        "intro": (t.profile.answers or {}).get("q9", "") if t.profile else "",
-        "message_to_future": (t.profile.answers or {}).get("q18", "") if t.profile else "",
+        "body": a.get("body", ""),
+        "edu": a.get("edu", ""),
+        "intro": a.get("q9", ""),
+        "message_to_future": a.get("q18", ""),
         "photos": signed_photo_urls(t),
         "reason": r.reason,
     }

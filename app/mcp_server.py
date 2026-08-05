@@ -22,8 +22,10 @@ def build_mcp() -> FastMCP:
         instructions=(
             "这是一个 AI 红娘服务。你(AI)代表用户与本服务交互:帮用户注册答题、"
             "查看每日推荐、发起/回应打招呼。规则:1) 用户的回访码是唯一凭证,注册后"
-            "务必提醒用户保存;2) 逐题引导,自然对话,不要一次抛多题;3) 涉及付款时,"
-            "把金额、地址、'金额必须一分不差'讲清楚;4) 转述拒绝消息时语气委婉。"),
+            "务必提醒用户保存;2) 逐题引导,自然对话,不要一次抛多题;3) 题目带 options "
+            "时,把选项用 1. 2. 3. 编号列出,并告诉用户【直接回数字就行】——把答案原样"
+            "或数字提交给 answer_question 即可,服务器认数字;4) 涉及付款时,把金额、"
+            "地址、'金额必须一分不差'讲清楚;5) 转述拒绝消息时语气委婉。"),
     )
     _register_tools(mcp)
     return mcp
@@ -70,8 +72,9 @@ def _register_tools(mcp: FastMCP) -> None:
             res = questionnaire.answer(db, u, answer)
             if res["done"] and not res["error"]:
                 matching.refresh_profile_derivatives(db, u)
-            res["instruction"] = ("有error就温和地让用户重答;完成后按extra的说明引导"
-                                  "上传照片/绑定通知。")
+            res["instruction"] = ("有error就温和地让用户重答;下一题如果带options,"
+                                  "把选项编号列出并告诉用户回数字即可(如'回2就行');"
+                                  "完成后按extra的说明引导上传照片/绑定通知。")
             return res
         finally:
             db.close()
