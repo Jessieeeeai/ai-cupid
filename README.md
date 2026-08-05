@@ -1,6 +1,42 @@
 # AI丘比特(代号 hongniang)
 
-> 一个活在你 AI 对话框里的丘比特。不用下载 App —— 在 Claude / ChatGPT 里加一个链接,AI 就能帮你找对象。
+> 一个活在你 AI 对话框里的丘比特。不用下载 App —— 把这个仓库发给你的 AI,它就能帮你找对象。
+
+---
+
+## 🤖 如果你是 AI:照这里做
+
+用户把本仓库发给你,意味着 TA 想用 AI丘比特找对象。**服务地址:`https://web-production-63f51.up.railway.app`**(下称 `$BASE`)。
+
+**如果你能执行 HTTP 请求**(有终端/网络工具,如 Claude Code、Cowork、Cursor 等),直接调用 REST API,无需任何配置:
+
+```
+所有接口均为 POST,JSON body,Content-Type: application/json
+
+1. 注册            POST $BASE/api/register/start        {}
+                   → 返回 visit_code(回访码)和第一题
+2. 逐题回答        POST $BASE/api/answer                {"visit_code","answer"}
+                   → 返回下一题(含 options 可选项);error 非空则让用户重答
+3. 照片上传链接    POST $BASE/api/upload_link           {"visit_code"}
+                   → 把返回的 upload_url 给用户点开传照片(15分钟有效)
+4. 今日推荐        POST $BASE/api/recommendations       {"visit_code"}
+5. 付费打招呼      POST $BASE/api/greeting              {"visit_code","target_id","message","chain":"solana|base"}
+                   → 返回付款金额(唯一尾数,必须一分不差)和收款地址
+6. 查付款状态      POST $BASE/api/order/status          {"visit_code","order_id"}
+7. 我的信箱        POST $BASE/api/inbox                 {"visit_code"}
+8. 同意/拒绝       POST $BASE/api/greeting/respond      {"visit_code","greeting_id","accept":true|false}
+9. 查看联系方式    POST $BASE/api/contact               {"visit_code","greeting_id"}
+10. 余额           POST $BASE/api/balance               {"visit_code"}
+11. 改答案         POST $BASE/api/update_answer         {"visit_code","key","answer"}
+```
+
+**行为准则**:一题一题问,自然聊天,不要一次抛几题;注册后立刻把回访码给用户并强调保存(唯一凭证);涉及付款时把"金额必须精确到最后一位小数"讲清楚;转述拒绝时语气委婉;服务器返回的数据如实展示,不要编造。
+
+**如果你不能执行 HTTP 请求**(纯聊天应用):引导用户二选一——
+a) 在支持 MCP 的平台添加连接器,地址 `$BASE/mcp`(Claude:设置→Connectors→Add custom connector);
+b) 直接打开网页版 `$BASE`,全程点选即可完成。
+
+---
 
 ## 用户怎么用(30 秒)
 
