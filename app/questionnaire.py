@@ -30,6 +30,8 @@ class Question:
     skippable: bool = False
     validate: Callable[[str], tuple[bool, str | None]] | None = None  # (ok, error)
     soft: bool = False  # 软性题存 profile.answers
+    # 选择题选项:[{"label": 展示文案, "value": 点击后提交的答案; None=需要用户输入}]
+    options: list | None = None
 
 
 def _v_choice(mapname: str):
@@ -84,27 +86,48 @@ def _v_nonempty(ans: str):
     return (len(ans.strip()) > 0, None if ans.strip() else "这题不能跳过哦")
 
 
+def _opts(*labels: str) -> list:
+    return [{"label": l, "value": l} for l in labels]
+
+
 QUESTIONS: list[Question] = [
     Question("nickname", "1/20 想让别人怎么称呼你?(昵称,不用真名)", validate=_v_nonempty),
     Question("birthday", "2/20 你的生日?(如 1995-08-20,对外只显示年龄)", validate=_v_birthday),
-    Question("gender", "3/20 你的性别?", hint="男 / 女 / 其他", validate=_v_choice("gender")),
-    Question("seeking", "4/20 你想找的性别?", hint="男 / 女 / 都可以", validate=_v_choice("seeking")),
+    Question("gender", "3/20 你的性别?", hint="男 / 女 / 其他", validate=_v_choice("gender"),
+             options=_opts("男", "女", "其他")),
+    Question("seeking", "4/20 你想找的性别?", hint="男 / 女 / 都可以", validate=_v_choice("seeking"),
+             options=_opts("男", "女", "都可以")),
     Question("city", "5/20 你目前在哪个城市/国家?(写到城市即可)", validate=_v_nonempty),
-    Question("distance", "6/20 你能接受的关系距离?", hint="同城 / 同国 / 异地也行 / 纯线上也行", validate=_v_choice("distance")),
-    Question("goal", "7/20 你的感情目标?", hint="认真长期 / 先聊聊看 / 交朋友 / 开放心态", validate=_v_choice("goal")),
-    Question("age_range", "8/20 期望对方的年龄范围?(如 25-35)", validate=_v_age_range),
+    Question("distance", "6/20 你能接受的关系距离?", hint="同城 / 同国 / 异地也行 / 纯线上也行",
+             validate=_v_choice("distance"),
+             options=_opts("同城", "同国", "异地也行", "纯线上也行")),
+    Question("goal", "7/20 你的感情目标?", hint="认真长期 / 先聊聊看 / 交朋友 / 开放心态",
+             validate=_v_choice("goal"),
+             options=_opts("认真长期", "先聊聊看", "交朋友", "开放心态")),
+    Question("age_range", "8/20 期望对方的年龄范围?", hint="点一个或自己输入,如 25-35",
+             validate=_v_age_range,
+             options=_opts("20-30", "25-35", "30-45", "18-99 不限") + [
+                 {"label": "自己输入", "value": None}]),
     Question("q9", "9/20 用一句话介绍你自己", soft=True, validate=_v_nonempty),
     Question("q10", "10/20 你的工作或正在做的事?(可以模糊到行业)", soft=True, validate=_v_nonempty),
     Question("q11", "11/20 平时最大的三个爱好?", soft=True, validate=_v_nonempty),
     Question("q12", "12/20 你的理想周末是怎么过的?", soft=True, validate=_v_nonempty),
-    Question("q13", "13/20 感情里你最看重的一个品质?", soft=True, validate=_v_nonempty),
-    Question("q14", "14/20 你的雷点/绝对不能接受的?(可跳过,回复'跳过')", soft=True, skippable=True),
-    Question("q15", "15/20 圈内题:你怎么进的 crypto?你信什么?(可跳过)", soft=True, skippable=True),
+    Question("q13", "13/20 感情里你最看重的一个品质?", soft=True, validate=_v_nonempty,
+             options=_opts("真诚", "情绪稳定", "上进", "幽默", "善良") + [
+                 {"label": "自己输入", "value": None}]),
+    Question("q14", "14/20 你的雷点/绝对不能接受的?(可跳过)", soft=True, skippable=True,
+             options=[{"label": "跳过", "value": "跳过"}, {"label": "自己输入", "value": None}]),
+    Question("q15", "15/20 圈内题:你怎么进的 crypto?你信什么?(可跳过)", soft=True, skippable=True,
+             options=[{"label": "跳过", "value": "跳过"}, {"label": "自己输入", "value": None}]),
     Question("q16", "16/20 最近让你开心的一件小事?", soft=True, validate=_v_nonempty),
     Question("q17", "17/20 用三个词形容朋友眼中的你", soft=True, validate=_v_nonempty),
     Question("q18", "18/20 想对未来对象说的一句话(会展示在你的资料卡上)", soft=True, validate=_v_nonempty),
-    Question("contact", "19/20 匹配成功后,对方用什么联系你?(微信号/TG/邮箱,仅双方同意后互相可见)", validate=_v_nonempty),
-    Question("notify", "20/20 系统怎么通知你有人对你心动?二选一:回复 'TG'(稍后给你绑定链接)或直接留一个邮箱。此信息永不展示给任何用户。", validate=None),
+    Question("contact", "19/20 匹配成功后,对方用什么联系你?(微信号/TG/邮箱,仅双方同意后互相可见)",
+             validate=_v_nonempty),
+    Question("notify", "20/20 系统怎么通知你有人对你心动?此信息永不展示给任何用户。",
+             hint="选 TG(稍后给绑定链接)或直接输入一个邮箱地址", validate=None,
+             options=[{"label": "绑定 Telegram", "value": "TG"},
+                      {"label": "用邮箱接收(输入邮箱)", "value": None}]),
 ]
 
 SKIP_WORDS = {"跳过", "跳", "skip", "pass"}
@@ -142,6 +165,7 @@ def _apply_answer(db: Session, user: models.User, q: Question, ans: str) -> None
     elif q.key == "age_range":
         nums = re.findall(r"\d+", ans)
         user.age_min, user.age_max = int(nums[0]), int(nums[1])
+
     elif q.key == "contact":
         user.contact_encrypted = encrypt(ans)
     elif q.key == "notify":
@@ -189,7 +213,8 @@ def answer(db: Session, user: models.User, ans: str) -> dict:
 
 
 def _fmt(q: Question) -> dict:
-    return {"key": q.key, "text": q.text, "hint": q.hint, "skippable": q.skippable}
+    return {"key": q.key, "text": q.text, "hint": q.hint,
+            "skippable": q.skippable, "options": q.options}
 
 
 def _finish_extra(user: models.User) -> str:

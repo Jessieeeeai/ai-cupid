@@ -34,13 +34,24 @@
   .reco img { width:100%; max-height:260px; object-fit:cover; border-radius:8px; }
   .reco b { font-size:16px; }
   .reco .why { color:var(--dim); font-size:13px; margin-top:6px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; align-self:flex-start; max-width:82%; }
+  .opt { background:transparent; border:1.5px solid var(--accent); color:var(--accent);
+         border-radius:20px; padding:8px 16px; font-size:14px; cursor:pointer; }
+  .opt:active { background:var(--accent); color:#fff; }
+  .ai-use { margin-left:auto; background:transparent; border:1px solid var(--accent);
+            color:var(--accent); border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; }
+  #promptbox { display:none; background:var(--card); border:1px dashed var(--accent);
+               border-radius:10px; margin:10px 16px 0; padding:12px; font-size:13px;
+               color:var(--dim); white-space:pre-wrap; }
 </style>
 </head>
 <body>
 <header>
   <div class="logo">❤</div>
-  <div><b>{{BRAND}}</b><small>AI 红娘 · 你的 AI 也能直接接入(见 GitHub)</small></div>
+  <div><b>{{BRAND}}</b><small>AI 红娘 · 网页可用,你的 AI 也能接入</small></div>
+  <button class="ai-use" id="aiuse">在你的 AI 里用</button>
 </header>
+<div id="promptbox"></div>
 <div id="chat"></div>
 <form id="f">
   <input id="inp" placeholder="输入回答…" autocomplete="off">
@@ -63,6 +74,28 @@ function add(cls, html) {
 }
 function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+const AI_PROMPT = `我想用「AI丘比特」找对象。它是一个 MCP 服务,地址:
+${location.origin}/mcp
+
+请这样帮我:
+1. 如果你所在的平台支持添加 MCP 连接器(比如 Claude 的 设置→Connectors→Add custom connector,或 ChatGPT 的连接器设置),请一步一步教我把上面这个地址加进去。
+2. 添加成功后,调用 register_start 工具帮我注册,然后一题一题地问我 20 个问题,自然聊天的方式,不要一次抛几题。
+3. 提醒我保存好回访码(那是唯一凭证),并引导我上传 3 张照片。
+4. 以后我每天来问你"今天有推荐吗",你就调用 get_recommendations 给我看今日推荐。
+5. 如果你没法添加 MCP 连接器,就直接告诉我打开 ${location.origin} 在网页里完成,一样能用。`;
+
+document.getElementById('aiuse').onclick = async () => {
+  const box = document.getElementById('promptbox');
+  if (box.style.display === 'block') { box.style.display = 'none'; return; }
+  box.textContent = AI_PROMPT + '\n';
+  const btn = document.createElement('button');
+  btn.className = 'opt';
+  btn.textContent = '一键复制这段提示词';
+  btn.onclick = () => { navigator.clipboard.writeText(AI_PROMPT); btn.textContent = '✅ 已复制,去粘贴给你的 AI 吧'; };
+  box.appendChild(btn);
+  box.style.display = 'block';
+};
+
 async function api(path, body) {
   const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
                                body: JSON.stringify(body||{})});
@@ -71,8 +104,41 @@ async function api(path, body) {
   return j;
 }
 
+function showOptions(opts) {
+  document.querySelectorAll('.opts').forEach(o => o.remove());  // 只保留最新一组
+  if (!opts || !opts.length) return;
+  const row = document.createElement('div');
+  row.className = 'opts';
+  for (const o of opts) {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = o.label;
+    b.onclick = () => {
+      if (o.value === null || o.value === undefined) {
+        inp.placeholder = o.label.includes('邮箱') ? '输入你的邮箱地址…' : '在这里输入…';
+        inp.focus();
+        return;
+      }
+      row.remove();
+      add('me', esc(o.value));
+      handleInput(o.value, true);
+    };
+    row.appendChild(b);
+  }
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showQuestion(q) {
+  add('ai', esc(q.text) + (q.hint ? `\n<span class="hint">${esc(q.hint)}</span>` : ''));
+  showOptions(q.options);
+  inp.placeholder = '输入回答…';
+}
+
 async function boot() {
-  add('ai', '你好呀,我是你的 AI 红娘 💕\n回答 20 个小问题 + 3 张照片,我每天给你推 3 位可能来电的人。\n\n已有回访码请直接输入(LOVE-开头);新朋友输入「开始」。');
+  add('ai', '你好呀,我是你的 AI 红娘 💕\n回答 20 个小问题 + 3 张照片,我每天给你推 3 位可能来电的人。');
+  showOptions([{label: '🚀 开始注册', value: '开始'},
+               {label: '我有回访码(LOVE-开头,直接输入)', value: null}]);
 }
 
 async function startRegister() {
@@ -82,20 +148,20 @@ async function startRegister() {
   add('ai', '这是你的<b>回访码</b>,唯一凭证,点一下复制,务必保存好:');
   const chip = add('ai', `<span class="code-chip">${code}</span>`);
   chip.querySelector('.code-chip').onclick = () => { navigator.clipboard.writeText(code); alert('已复制'); };
-  add('ai', esc(j.next_question.text) + (j.next_question.hint ? `\n<span class="hint">${esc(j.next_question.hint)}</span>` : ''));
+  showQuestion(j.next_question);
   mode = 'quiz';
 }
 
 async function sendAnswer(text) {
   const j = await api('/api/answer', {visit_code: code, answer: text});
-  if (j.error) { add('ai', '⚠️ ' + esc(j.error)); return; }
+  if (j.error) { add('ai', '⚠️ ' + esc(j.error)); if (j.next_question) showOptions(j.next_question.options); return; }
   if (j.done) {
     mode = 'chat';
     add('ai', esc(j.extra || '问卷完成!'));
     const u = await api('/api/upload_link', {visit_code: code});
     add('ai', `📷 点这里上传照片(15分钟内有效):<a href="${u.upload_url}" target="_blank">上传照片</a>\n\n之后随时输入「推荐」看今日推荐,「信箱」看谁想认识你,「我的」看资料。`);
   } else {
-    add('ai', esc(j.next_question.text) + (j.next_question.hint ? `\n<span class="hint">${esc(j.next_question.hint)}</span>` : ''));
+    showQuestion(j.next_question);
   }
 }
 
@@ -166,26 +232,34 @@ async function chatCmd(text) {
   add('ai', '可以输入:推荐 / 信箱 / 我的 / 照片 / 打招呼 <编号> <留言> / 同意 <编号> / 拒绝 <编号> / 改 <题目key> <新答案>');
 }
 
-f.onsubmit = async (e) => {
-  e.preventDefault();
-  const text = inp.value.trim();
-  if (!text) return;
-  add('me', esc(text));
-  inp.value = '';
+async function handleInput(text, fromOption) {
   try {
     if (mode === 'boot') {
       if (/^LOVE-/i.test(text)) {
         code = text.toUpperCase(); sessionStorage.setItem('visit_code', code);
         const j = await api('/api/me', {visit_code: code});
-        if (j.next_question) { mode = 'quiz'; add('ai', '欢迎回来!继续问卷:\n' + esc(j.next_question.text)); }
-        else { mode = 'chat'; add('ai', `欢迎回来,${esc(j.nickname||'')}!输入「推荐」看今日推荐。`); (j.unread_events||[]).forEach(ev => add('ai','🔔 '+esc(ev.kind))); }
+        if (j.next_question) { mode = 'quiz'; add('ai', '欢迎回来!继续问卷:'); showQuestion(j.next_question); }
+        else { mode = 'chat'; add('ai', `欢迎回来,${esc(j.nickname||'')}!`); showOptions([{label:'💘 今日推荐',value:'推荐'},{label:'💌 信箱',value:'信箱'},{label:'👤 我的资料',value:'我的'}]); (j.unread_events||[]).forEach(ev => add('ai','🔔 '+esc(ev.kind))); }
       } else { await startRegister(); }
     } else if (mode === 'quiz') { await sendAnswer(text); }
     else { await chatCmd(text); }
   } catch (err) { add('ai', '⚠️ ' + esc(err.message)); }
+}
+
+f.onsubmit = async (e) => {
+  e.preventDefault();
+  const text = inp.value.trim();
+  if (!text) return;
+  document.querySelectorAll('.opts').forEach(o => o.remove());
+  add('me', esc(text));
+  inp.value = '';
+  await handleInput(text, false);
 };
-boot();
-if (code) { mode = 'chat'; add('ai', '欢迎回来!输入「推荐」看今日推荐,「信箱」看谁想认识你。'); }
+if (code) {
+  mode = 'chat';
+  add('ai', '欢迎回来!');
+  showOptions([{label:'💘 今日推荐',value:'推荐'},{label:'💌 信箱',value:'信箱'},{label:'👤 我的资料',value:'我的'},{label:'📷 传照片',value:'照片'}]);
+} else { boot(); }
 </script>
 </body>
 </html>

@@ -46,7 +46,7 @@ def register_start(db: Session = Depends(get_db)):
     q = questionnaire.current_question(u)
     return {"visit_code": code,
             "important": "请让用户立刻保存好回访码,这是唯一凭证!",
-            "next_question": {"key": q.key, "text": q.text, "hint": q.hint}}
+            "next_question": questionnaire._fmt(q)}
 
 
 class AnswerBody(CodeBody):
@@ -91,7 +91,7 @@ def me(body: CodeBody, db: Session = Depends(get_db)):
     return {
         "nickname": u.nickname, "status": u.status.value,
         "reg_progress": f"{u.reg_step}/{len(questionnaire.QUESTIONS)}",
-        "next_question": {"text": q.text, "hint": q.hint} if q else None,
+        "next_question": questionnaire._fmt(q) if q else None,
         "photos": photos.signed_photo_urls(u),
         "answers": (u.profile.answers if u.profile else {}),
         "balance": u.balance,
